@@ -14,7 +14,7 @@ fi
 
 # Start server
 echo "Iniciando o servidor..."
-$TERM_CMD bash -c "cd servidor && source venv/bin/activate && python main.py; exec bash" &
+$TERM_CMD bash -c "source venv/bin/activate && python main.py; exec bash" &
 
 # Wait before starting client
 sleep 2

@@ -95,7 +95,7 @@ class App(tk.Tk):
         tk.Label(inner, text="Porta:", bg=BG2, fg=FG2, font=FONT_SM).pack(side="left")
         self.ent_port = tk.Entry(inner, width=7, bg=BG3, fg=FG,
                                   insertbackground=FG, font=FONT_UI, bd=0)
-        self.ent_port.insert(0, "9000")
+        self.ent_port.insert(0, "9001")
         self.ent_port.pack(side="left", padx=(4, 12))
 
         self.btn_conn = self._btn(inner, "Conectar", self._testar_conexao,
@@ -157,10 +157,17 @@ class App(tk.Tk):
         self.txt_cv.grid(row=3, column=0, padx=12, pady=(0, 8), sticky="ew")
 
         self._btn(f, "▶  Enviar para Análise", self._submit_job,
-                  color=ACCENT).grid(row=4, column=0, padx=12, pady=(0, 12), sticky="w")
+                  color=ACCENT).grid(row=4, column=0, padx=12, pady=(0, 8), sticky="w")
 
-        self.lbl_job_id = tk.Label(f, text="", bg=BG2, fg=SUCCESS, font=FONT_SM)
-        self.lbl_job_id.grid(row=4, column=0, padx=200, sticky="w")
+        id_row = tk.Frame(f, bg=BG2)
+        id_row.grid(row=5, column=0, padx=12, pady=(0, 12), sticky="ew")
+        tk.Label(id_row, text="Job ID:", bg=BG2, fg=FG2, font=FONT_SM).pack(side="left")
+        self.ent_submitted_id = tk.Entry(
+            id_row, width=44, bg=BG3, fg=SUCCESS, font=FONT_UI, bd=0,
+            state="readonly", readonlybackground=BG3)
+        self.ent_submitted_id.pack(side="left", padx=(6, 8))
+        self._btn(id_row, "Copiar ID", self._copy_submitted_id,
+                  color=ACCENT2).pack(side="left")
 
         f.columnconfigure(0, weight=1)
 
@@ -193,7 +200,9 @@ class App(tk.Tk):
         btns.pack(fill="x", padx=12, pady=10)
         self._btn(btns, "↻  Listar Jobs", self._list_jobs, color=ACCENT2).pack(side="left", padx=(0, 8))
         self._btn(btns, "✕  Cancelar Selecionado", self._cancel_job, color=WARNING).pack(side="left", padx=(0, 8))
-        self._btn(btns, "🗑  Limpar Fila", self._clear_queue, color=ERROR).pack(side="left")
+        self._btn(btns, "🗑  Limpar Fila", self._clear_queue, color=ERROR).pack(side="left", padx=(0, 8))
+        self._btn(btns, "Copiar ID Selecionado", self._on_job_select,
+                  color=ACCENT).pack(side="left")
 
         cols = ("id", "status")
         self.tree = ttk.Treeview(f, columns=cols, show="headings", height=14)
@@ -207,6 +216,7 @@ class App(tk.Tk):
         self.tree.column("id",     width=320)
         self.tree.column("status", width=140)
         self.tree.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.tree.bind("<<TreeviewSelect>>", self._on_job_select)
 
     def _tab_status(self, nb):
         f = self._frame(nb)
@@ -295,10 +305,13 @@ class App(tk.Tk):
             resp = self._send(msg)
             if resp and resp.startswith("OK"):
                 job_id = resp.split("job_id=")[-1].strip()
-                self.lbl_job_id.config(text=f"Job: {job_id[:18]}…")
+                self.ent_submitted_id.configure(state="normal")
+                self.ent_submitted_id.delete(0, "end")
+                self.ent_submitted_id.insert(0, job_id)
+                self.ent_submitted_id.configure(state="readonly")
                 self.ent_jobid.delete(0, "end")
                 self.ent_jobid.insert(0, job_id)
-                self._log(f"Job submetido: {job_id[:18]}…", SUCCESS)
+                self._log(f"Job submetido: {job_id[:18]}...", SUCCESS)
             else:
                 self._log(f"Erro ao submeter: {resp}", ERROR)
         self._run_async(_)
@@ -405,6 +418,27 @@ class App(tk.Tk):
             resp = self._send(f"SET_CRITERIA\n{criteria}")
             self._log(f"SET_CRITERIA → {resp}")
         self._run_async(_)
+
+    def _copy_submitted_id(self):
+        # Copy job_id from submit tab entry to clipboard.
+        job_id = self.ent_submitted_id.get()
+        if not job_id:
+            return
+        self.clipboard_clear()
+        self.clipboard_append(job_id)
+        self._log(f"Job ID {job_id[:18]}... copiado para area de transferencia")
+
+    def _on_job_select(self, event=None):
+        # Fill result tab entry and clipboard with job_id from selected row.
+        sel = self.tree.selection()
+        if not sel:
+            return
+        job_id = str(self.tree.item(sel[0])["values"][0])
+        self.ent_jobid.delete(0, "end")
+        self.ent_jobid.insert(0, job_id)
+        self.clipboard_clear()
+        self.clipboard_append(job_id)
+        self._log(f"Job {job_id[:18]}... copiado para area de transferencia")
 
     # ── Polling automático de status ───────────────────────────────────────
 

@@ -39,18 +39,18 @@ Sistema cliente-servidor de análise de currículos com threads, sincronização
 | `CLEAR_QUEUE` | Limpa todos os jobs pendentes |
 | `SET_CRITERIA` | Define critério extra de análise |
 
-## Dependencias
+## Dependências
 
-| Componente | Dependencia | Como instalar |
+| Componente | Dependência | Como instalar |
 |---|---|---|
 | Ambos | Python 3.14+ | — |
 | Servidor | `python-dotenv` | `pip install python-dotenv` (dentro do venv) |
 | Cliente | `python3-tk` | `sudo apt install python3-tk` |
-| Ambos | `socket`, `threading`, `json`, `uuid`, `time` | stdlib — sem instalacao |
+| Ambos | `socket`, `threading`, `tkinter`, `json`, `uuid`, `time` | stdlib — sem instalação |
 
 ## Como rodar
 
-### 1. Instalar dependencias
+### 1. Instalar dependências
 
 **Servidor** (usar venv):
 ```bash
@@ -67,7 +67,7 @@ sudo apt install python3-tk
 
 ### 2. Configurar API Key
 
-Crie o arquivo `servidor/.env` com o conteudo:
+Crie o arquivo `servidor/.env` com o conteúdo:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
@@ -86,25 +86,11 @@ python3 main.py
 ```
 
 ### 5. Na GUI
-1. Clique em **Conectar** (padrao: 127.0.0.1:9001)
+1. Clique em **Conectar** (padrão: 127.0.0.1:9001)
 2. Aba **Submeter Job**: cole a descrição da vaga e o currículo → **Enviar para Análise**
 3. Aba **Resultado**: cole o Job ID retornado → **Buscar** (aguarde ~10s para a API responder)
 4. Aba **Jobs**: liste, cancele ou limpe a fila
 5. Aba **Status Servidor**: veja métricas em tempo real
-
-## Apresentacao — Conceitos Aplicados
-
-| Requisito | Implementacao |
-|---|---|
-| 4 threads | `network_thread`, `monitor_thread`, `gc_thread`, `worker_thread` |
-| 2 threads periodicas | `monitor_thread` (intervalo 2s), `gc_thread` (intervalo 30s) |
-| 1 thread de rede | `network_thread` (aceita conexoes TCP na porta 9001) |
-| 1 thread com mutex/condicao | `worker_thread` bloqueada em `cv.wait_for()` |
-| Mutex | `threading.Lock()` protegendo `fila`, `resultados` e `metricas` |
-| Variavel de condicao | `threading.Condition(lock)` — padrao produtor/consumidor |
-| Comunicacao em rede | Sockets TCP na porta 9001 |
-| Interface grafica | tkinter com 5 abas + polling automatico a cada 5s |
-| 6+ comandos | 7 comandos implementados (ver tabela Comandos acima) |
 
 ## Protocolo TCP
 
@@ -127,3 +113,17 @@ GET_RESULT
 # Servidor → Cliente
 OK {"status": "concluido", "resultado": "...análise..."}
 ```
+
+## Apresentação — Conceitos Aplicados
+
+| Requisito | Implementação |
+|---|---|
+| 4 threads | `network_thread`, `monitor_thread`, `gc_thread`, `worker_thread` |
+| 2 threads periódicas | `monitor_thread` (2s), `gc_thread` (30s) |
+| 1 thread de rede | `network_thread` |
+| 1 thread com mutex/condição | `worker_thread` com `cv.wait_for()` |
+| mutex | `threading.Lock()` protegendo `fila`, `resultados`, `metricas` |
+| variável de condição | `threading.Condition(lock)`, padrão produtor/consumidor |
+| comunicação em rede | sockets TCP porta 9001 |
+| interface gráfica | tkinter 5 abas + polling automático 5s |
+| 6+ comandos | 7 comandos implementados |
