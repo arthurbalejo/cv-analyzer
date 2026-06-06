@@ -72,20 +72,34 @@ Crie o arquivo `servidor/.env` com o conteúdo:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 3. Iniciar servidor
+### 3. Iniciar (via script — recomendado)
+
+A partir da raiz do projeto, torne o script executável e rode:
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+O script detecta automaticamente o emulador de terminal disponível (gnome-terminal, konsole ou xterm) e abre o servidor e o cliente em janelas separadas.
+
+> **Pré-requisito:** o venv e o `.env` já devem estar configurados conforme os passos 1 e 2.
+
+### 3. Iniciar manualmente (alternativo)
+
+**Servidor:**
 ```bash
 cd servidor
 source venv/bin/activate
 python main.py
 ```
 
-### 4. Iniciar cliente (outro terminal)
+**Cliente** (outro terminal):
 ```bash
 cd cliente
 python3 main.py
 ```
 
-### 5. Na GUI
+### 4. Na GUI
 1. Clique em **Conectar** (padrão: 127.0.0.1:9001)
 2. Aba **Submeter Job**: cole a descrição da vaga e o currículo → **Enviar para Análise**
 3. Aba **Resultado**: cole o Job ID retornado → **Buscar** (aguarde ~10s para a API responder)
