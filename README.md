@@ -1,4 +1,4 @@
-# CV Analyzer — Trabalho Final SO
+# CV Analyzer — Trabalho Final Sistema de Tempo Real
 
 Sistema cliente-servidor de análise de currículos com threads, sincronização e interface gráfica.
 
