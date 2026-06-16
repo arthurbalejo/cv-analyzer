@@ -6,11 +6,11 @@ Sistema cliente-servidor de análise de currículos com threads, sincronização
 
 ```
 .
-├── servidor/
-│   ├── main.py        # servidor TCP + 4 threads
-│   └── api_claude.py  # integração com a API Anthropic
+├── main.py        # servidor TCP + 4 threads
+├── api_claude.py  # integração com a API Anthropic
+├── start.sh       # script de inicialização
 └── cliente/
-    └── main.py        # GUI tkinter
+    └── main.py    # GUI tkinter
 ```
 
 ## Arquitetura de Threads
@@ -24,8 +24,8 @@ Sistema cliente-servidor de análise de currículos com threads, sincronização
 
 ## Sincronização
 
-- **`threading.Lock` (mutex)**: protege `fila`, `resultados` e `metricas`
-- **`threading.Condition` (variável de condição)**: `worker_thread` dorme até `cv.notify()` ser chamado pela `network_thread` ao receber `SUBMIT_JOB`
+- **`threading.Lock` (mutex)**: protege `fila`, `resultados`, `metricas` e o contador `clientes_ativos`
+- **`threading.Condition` (variável de condição)**: `worker_thread` dorme em `cv.wait_for()` até `cv.notify()` ser chamado por `handle_client` (via `cmd_submit`) ao receber um `SUBMIT_JOB` — padrão produtor/consumidor
 
 ## Comandos (7)
 
@@ -54,7 +54,6 @@ Sistema cliente-servidor de análise de currículos com threads, sincronização
 
 **Servidor** (usar venv):
 ```bash
-cd servidor
 python3 -m venv venv
 source venv/bin/activate
 pip install python-dotenv
@@ -67,7 +66,7 @@ sudo apt install python3-tk
 
 ### 2. Configurar API Key
 
-Crie o arquivo `servidor/.env` com o conteúdo:
+Crie o arquivo `.env` na raiz do projeto com o conteúdo:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
@@ -88,7 +87,6 @@ O script detecta automaticamente o emulador de terminal disponível (gnome-termi
 
 **Servidor:**
 ```bash
-cd servidor
 source venv/bin/activate
 python main.py
 ```
@@ -104,7 +102,25 @@ python3 main.py
 2. Aba **Submeter Job**: cole a descrição da vaga e o currículo → **Enviar para Análise**
 3. Aba **Resultado**: cole o Job ID retornado → **Buscar** (aguarde ~10s para a API responder)
 4. Aba **Jobs**: liste, cancele ou limpe a fila
-5. Aba **Status Servidor**: veja métricas em tempo real
+5. Aba **Status Servidor**: veja métricas em tempo real (atualiza automaticamente a cada 5s quando conectado)
+6. Aba **Avançado**: defina critério extra de análise via `SET_CRITERIA` antes de submeter um job
+
+## Ciclo de Vida de um Job
+
+```
+SUBMIT_JOB → pendente
+                ↓  worker_thread acorda (cv.notify)
+             processando
+            /            \
+       concluido          erro
+```
+
+`CANCEL_JOB` e `CLEAR_QUEUE` só atuam sobre jobs com status `pendente`.
+
+## Integração com a API
+
+`api_claude.py` chama a API da Anthropic usando `urllib.request` (sem dependências externas).  
+Modelo utilizado: **`claude-sonnet-4-5`** — retorna análise em texto com pontuação, pontos fortes, lacunas e recomendação.
 
 ## Protocolo TCP
 
